@@ -179,7 +179,7 @@ function solveNoBterm(a: Rational, b: Rational, c: Rational,
     ]
     verifyChecks.push(`x = 0 \\text{ を代入: } 0 = 0 \\checkmark`)
     altForms.push(buildVieta(a, b, c))
-    altForms.push(buildCompleteSquareAlt(a, b, c))
+    const csAlt = buildCompleteSquareAlt(a, b, c); if (csAlt) altForms.push(csAlt)
     return { answerLatex: 'x = 0 \\text{（重解）}', stepsLatex: shortSteps, stepsDetailLatex: detailSteps, verify: { ok: true, checks: verifyChecks }, altForms }
   }
 
@@ -204,7 +204,7 @@ function solveNoBterm(a: Rational, b: Rational, c: Rational,
     ]
     verifyChecks.push(`x^2 = ${rhs.toLatex()} < 0 \\Rightarrow \\text{実数解は存在しません}`)
     altForms.push(buildVieta(a, b, c))
-    altForms.push(buildCompleteSquareAlt(a, b, c))
+    const csAlt = buildCompleteSquareAlt(a, b, c); if (csAlt) altForms.push(csAlt)
     return { answerLatex, stepsLatex: shortSteps, stepsDetailLatex: detailSteps, verify: { ok: true, checks: verifyChecks }, altForms }
   }
 
@@ -237,7 +237,7 @@ function solveNoBterm(a: Rational, b: Rational, c: Rational,
       : `x = ${x2.toLatex()} \\text{ を代入: } ${v2.toLatex()} \\neq 0 \\times`)
     // ※ 因数分解はほぼ同じ形なので省略
     altForms.push(buildVieta(a, b, c))
-    altForms.push(buildCompleteSquareAlt(a, b, c))
+    const csAlt = buildCompleteSquareAlt(a, b, c); if (csAlt) altForms.push(csAlt)
     return { answerLatex, stepsLatex: shortSteps, stepsDetailLatex: detailSteps, verify: { ok, checks: verifyChecks }, altForms }
   }
 
@@ -253,7 +253,7 @@ function solveNoBterm(a: Rational, b: Rational, c: Rational,
   verifyChecks.push(`x \\approx \\pm ${x1Num.toFixed(6)},\\quad x^2 \\approx ${(x1Num * x1Num).toFixed(6)} \\approx ${rhs.toNumber().toFixed(6)} \\checkmark`)
   altForms.push({ label: '数値（近似）', latex: `x \\approx ${(-x1Num).toFixed(6)}, \\quad ${x1Num.toFixed(6)}` })
   altForms.push(buildVieta(a, b, c))
-  altForms.push(buildCompleteSquareAlt(a, b, c))
+  const csAlt = buildCompleteSquareAlt(a, b, c); if (csAlt) altForms.push(csAlt)
   return { answerLatex: `x = \\pm ${sqrtStr}`, stepsLatex: shortSteps, stepsDetailLatex: detailSteps, verify: { ok: true, checks: verifyChecks }, altForms }
 }
 
@@ -356,7 +356,7 @@ function solveTwoRealRoots(
       // 因数分解不可の場合のみ別途表示しない（canFactor=trueなら主解法なのでaltFormには不要）
     }
     altForms.push(buildVieta(a, b, c))
-    altForms.push(buildCompleteSquareAlt(a, b, c))
+    const csAlt = buildCompleteSquareAlt(a, b, c); if (csAlt) altForms.push(csAlt)
 
     return {
       answerLatex, stepsLatex: shortSteps, stepsDetailLatex: detailSteps,
@@ -473,7 +473,7 @@ function solveTwoRealRoots(
 
   altForms.push({ label: '数値（近似）', latex: `x \\approx ${xn1.toFixed(6)}, \\quad ${xn2.toFixed(6)}` })
   altForms.push(buildVieta(a, b, c))
-  altForms.push(buildCompleteSquareAlt(a, b, c))
+  const csAlt = buildCompleteSquareAlt(a, b, c); if (csAlt) altForms.push(csAlt)
 
   return {
     answerLatex, stepsLatex: shortSteps, stepsDetailLatex: detailSteps,
@@ -563,7 +563,7 @@ function solveComplexRoots(a: Rational, b: Rational, c: Rational, D: Rational): 
     altForms.push({ label: '解の公式（別解）', latex: `\\begin{aligned}\n${altLines.join(' \\\\\\\\\n')}\n\\end{aligned}` })
   }
   altForms.push(buildVieta(a, b, c))
-  altForms.push(buildCompleteSquareAlt(a, b, c))
+  const csAlt = buildCompleteSquareAlt(a, b, c); if (csAlt) altForms.push(csAlt)
   return { answerLatex, stepsLatex: shortSteps, stepsDetailLatex: detailSteps, verify: { ok: true, checks: verifyChecks }, altForms }
 }
 
@@ -718,7 +718,8 @@ function buildQuadraticFormulaAlt(
 }
 
 // ========== ヘルパ: 平方完成の手順（最後まで答えを出す）==========
-function buildCompleteSquareAlt(a: Rational, b: Rational, c: Rational): { label: string; latex: string } {
+function buildCompleteSquareAlt(a: Rational, b: Rational, c: Rational): { label: string; latex: string } | null {
+  if (b.isZero()) return null  // b=0 は平方完成不要
   const twoA    = Rational.of(2).mul(a)
   const halfB   = b.div(twoA)                                    // b/(2a)
   const halfBSq = halfB.mul(halfB)                               // (b/(2a))²
@@ -732,36 +733,6 @@ function buildCompleteSquareAlt(a: Rational, b: Rational, c: Rational): { label:
   const lines: string[] = []
   const polyStr = formatPoly(a, b, c)
   lines.push(`${polyStr} = 0`)
-
-  // ---- b=0: ax²+c=0 → x²=-c/a のみ ----
-  if (bIsZero) {
-    if (!a.isOne()) {
-      lines.push(`${formatPoly(Rational.ONE, Rational.ZERO, c.div(a))} = 0`)
-    }
-    lines.push(`x^2 = ${rhs.toLatex()}`)
-    if (D.isZero()) {
-      lines.push(`x = 0 \\text{（重解）}`)
-    } else if (D.isNegative()) {
-      lines.push(`\\text{右辺} < 0 \\Rightarrow \\text{実数解なし}`)
-      const negD = D.neg()
-      const sqrtForm = simpleSqrt(negD)
-      const imagCoef = sqrtForm ? sqrtForm.coef.div(twoA) : Rational.ONE.div(twoA)
-      const radicand  = sqrtForm ? sqrtForm.radicand : negD.num
-      lines.push(formatComplexAnswer(negHalfB, imagCoef, radicand))
-    } else {
-      const sqrtRhs = simpleSqrt(rhs)
-      if (sqrtRhs && sqrtRhs.radicand === 1n) {
-        lines.push(`x = \\pm ${sqrtRhs.coef.toLatex()}`)
-      } else {
-        const sqrtStr = sqrtRhs ? sqrtFormToLatex(sqrtRhs) : `\\sqrt{${rhs.toLatex()}}`
-        lines.push(`x = \\pm ${sqrtStr}`)
-      }
-    }
-    return {
-      label: '平方完成の手順',
-      latex: `\\begin{aligned}\n${lines.join(' \\\\\\\\\n')}\n\\end{aligned}`,
-    }
-  }
 
   // ---- b≠0: 4ステップで平方完成 ----
   const ba    = b.div(a)    // b/a

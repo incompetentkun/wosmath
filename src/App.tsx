@@ -80,8 +80,8 @@ export default function App() {
             <div className="mode-title-row">
               <h2 className="mode-title">{currentMode.label}</h2>
               {activeMode === 'quadratic' && (
-                <button className="guide-btn" onClick={() => setShowGuide(true)} title="解き方を見る">
-                  ？
+                <button className="guide-btn" onClick={() => setShowGuide(true)}>
+                  解き方を見る
                 </button>
               )}
             </div>

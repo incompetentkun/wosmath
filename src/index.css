@@ -944,17 +944,18 @@ body {
 .guide-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 26px; height: 26px;
-  border-radius: 50%;
+  padding: 6px 14px;
+  min-height: 36px;
+  border-radius: 20px;
   border: 1.5px solid var(--accent);
   background: none;
   color: var(--accent);
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .guide-btn:hover {

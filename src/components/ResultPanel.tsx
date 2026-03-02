@@ -21,11 +21,11 @@ export function ResultPanel({ result }: ResultPanelProps) {
   const tabs: { id: Tab; label: string; count?: number; hidden?: boolean }[] = [
     { id: 'answer',        label: '答え' },
     { id: 'steps',         label: '途中式',          count: result.stepsLatex.length },
+    { id: 'graph',         label: 'グラフ',           hidden: !hasGraph },
     { id: 'steps_detail',  label: '途中式（詳細）',  count: result.stepsDetailLatex?.length, hidden: !hasDetail },
+    { id: 'altforms',      label: '別表現',           count: result.altForms.length },
     { id: 'discriminant',  label: '判別式',           count: result.discriminantLatex?.length, hidden: !hasDisc },
     { id: 'verify',        label: '検算',             count: result.verify.checks.length },
-    { id: 'altforms',      label: '別表現',           count: result.altForms.length },
-    { id: 'graph',         label: 'グラフ',           hidden: !hasGraph },
   ]
 
   const visibleTabs = tabs.filter(t => !t.hidden)
