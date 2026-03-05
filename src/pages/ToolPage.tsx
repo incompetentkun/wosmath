@@ -38,7 +38,7 @@ export function ToolPage() {
 
   useEffect(() => {
     if (currentMode) {
-      document.title = currentMode.label
+      document.title = `${currentMode.label} | 無料計算ツール`
       const desc = MODE_DESCRIPTIONS[currentMode.slug]
       if (desc) document.querySelector('meta[name="description"]')?.setAttribute('content', desc)
       cancel()

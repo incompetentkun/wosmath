@@ -1442,7 +1442,7 @@ body {
 /* 結果カード */
 .gcd-results {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 16px;
   margin-bottom: 24px;
 }

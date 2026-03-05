@@ -22,7 +22,7 @@ export function GcdLcmPage() {
   const [showSteps, setShowSteps] = useState(false)
 
   useEffect(() => {
-    document.title = '最大公約数・最小公倍数'
+    document.title = '最大公約数・最小公倍数 | 無料計算ツール'
     document.querySelector('meta[name="description"]')?.setAttribute('content', '2つ以上の整数の最大公約数（GCD）と最小公倍数（LCM）を計算。素因数分解・ユークリッドの互除法による途中式つき。')
     window.scrollTo(0, 0)
   }, [])
