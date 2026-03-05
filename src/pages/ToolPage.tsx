@@ -16,6 +16,11 @@ import { SequenceForm } from '../components/forms/SequenceForm'
 const CATEGORIES = [...new Set(MODES.map(m => m.category))]
 const AVAILABLE_SLUGS = ['quadratic', 'factorization']
 
+const MODE_DESCRIPTIONS: Record<string, string> = {
+  quadratic:     '二次方程式 ax²+bx+c=0 を解いて途中式を表示。判別式・解の公式・グラフまで対応。',
+  factorization: '多項式の因数分解を途中式つきで計算。因数定理・完全平方式・差の平方などに対応。',
+}
+
 export function ToolPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
@@ -33,7 +38,9 @@ export function ToolPage() {
 
   useEffect(() => {
     if (currentMode) {
-      document.title = `${currentMode.label} | wosmath`
+      document.title = currentMode.label
+      const desc = MODE_DESCRIPTIONS[currentMode.slug]
+      if (desc) document.querySelector('meta[name="description"]')?.setAttribute('content', desc)
       cancel()
       setShowGuide(false)
     }

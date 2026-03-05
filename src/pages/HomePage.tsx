@@ -17,7 +17,8 @@ const VISIBLE_SLUGS = ['quadratic', 'factorization']
 
 export function HomePage() {
   useEffect(() => {
-    document.title = 'wosmath | 無料計算ツール'
+    document.title = '無料計算ツール'
+    document.querySelector('meta[name="description"]')?.setAttribute('content', '途中式つきの無料計算ツール。二次方程式・因数分解・最大公約数・素因数分解などに対応。')
   }, [])
 
   return (

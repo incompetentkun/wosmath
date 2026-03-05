@@ -25,7 +25,8 @@ export function PrimeFactPage() {
   const resultRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    document.title = '素因数分解 | wosmath'
+    document.title = '素因数分解'
+    document.querySelector('meta[name="description"]')?.setAttribute('content', '整数を素因数分解して約数の個数・和・一覧を求めます。割り算の途中式もわかりやすく表示。')
     window.scrollTo(0, 0)
   }, [])
 

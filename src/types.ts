@@ -42,7 +42,7 @@ export interface ModeInfo {
 
 export const MODES: ModeInfo[] = [
   { id: 'quadratic',     slug: 'quadratic',     category: '代数', label: '二次方程式',       description: 'ax²+bx+c=0 を解く' },
-  { id: 'factor',        slug: 'factorization',  category: '代数', label: '因数分解・展開',   description: '多項式の因数分解・展開' },
+  { id: 'factor',        slug: 'factorization',  category: '代数', label: '因数分解',         description: '多項式の因数分解' },
   { id: 'linear_eq',     slug: 'linear-eq',      category: '代数', label: '連立一次方程式',   description: '2元・3元連立方程式' },
   { id: 'integral',      slug: 'integral',       category: '微積', label: '定積分',           description: '多項式の定積分を計算' },
   { id: 'combinatorics', slug: 'combinatorics',  category: '確率', label: '順列・組合せ',     description: 'nPr / nCr の計算' },

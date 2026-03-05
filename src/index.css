@@ -1878,3 +1878,23 @@ body {
   font-weight: 600;
   color: var(--text2);
 }
+
+@media (max-width: 540px) {
+  .app-header { padding: 10px 16px; }
+  .header-inner { align-items: flex-start; }
+  .app-title {
+    flex: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 0 6px;
+  }
+  .title-icon { width: 26px; height: 26px; font-size: 0.85rem; border-radius: 7px; }
+  .home-link { font-size: 1rem; gap: 6px; }
+  .breadcrumb-sep { display: none; }
+  .breadcrumb-current {
+    width: 100%;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    padding-top: 3px;
+  }
+}
