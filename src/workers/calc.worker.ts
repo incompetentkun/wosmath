@@ -2,7 +2,7 @@
 
 import type { WorkerRequest, WorkerResponse } from '../types'
 import { solveQuadratic } from '../engines/algebra/quadratic'
-import { solveFactorExpand } from '../engines/algebra/factor'
+import { solveFactorExpand, factorQuadratic, factorCubic } from '../engines/algebra/factor'
 import { solveLinearEq } from '../engines/algebra/linear_eq'
 import { solveIntegral } from '../engines/calculus/integral'
 import { solveCombinatorics } from '../engines/probability/combinatorics'
@@ -18,9 +18,19 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
       case 'quadratic':
         result = solveQuadratic(params as { a: number; b: number; c: number })
         break
-      case 'factor':
-        result = solveFactorExpand(params as { expression: string; mode: 'factor' | 'expand' })
+      case 'factor': {
+        const fp = params as { a?: number; b?: number; c?: number; d?: number; degree?: number; expression?: string; mode: 'factor' | 'expand' }
+        if (fp.a !== undefined) {
+          if (fp.degree === 3) {
+            result = factorCubic(BigInt(fp.a), BigInt(fp.b ?? 0), BigInt(fp.c ?? 0), BigInt(fp.d ?? 0))
+          } else {
+            result = factorQuadratic(BigInt(fp.a), BigInt(fp.b ?? 0), BigInt(fp.c ?? 0))
+          }
+        } else {
+          result = solveFactorExpand(fp as { expression: string; mode: 'factor' | 'expand' })
+        }
         break
+      }
       case 'linear_eq':
         result = solveLinearEq(params as unknown as { coefficients: number[][] })
         break

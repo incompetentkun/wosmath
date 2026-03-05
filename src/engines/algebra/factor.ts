@@ -64,123 +64,137 @@ function parseQuadratic(expr: string): ParsedPoly | null {
 }
 
 // ========== 二次式の因数分解 ==========
-function factorQuadratic(a: bigint, b: bigint, c: bigint): CalcResult {
+export function factorQuadratic(a: bigint, b: bigint, c: bigint): CalcResult {
   const steps: string[] = []
-  const altForms: { label: string; latex: string }[] = []
+  const origLatex = formatQuadraticLatex(a, b, c)
+  steps.push(`\\text{式: } ${origLatex}`)
 
-  const aR = Rational.of(a)
-  const bR = Rational.of(b)
-  const cR = Rational.of(c)
+  // ── Step 1: 先頭係数を正に (a < 0 → -1 をくくる) ──
+  let prefix = 1n
+  let A = a, B = b, C = c
+  if (A < 0n) {
+    prefix = -1n
+    A = -A; B = -B; C = -C
+    steps.push(`= -(${formatQuadraticLatex(A, B, C)})`)
+  }
 
-  const polyStr = formatQuadraticLatex(a, b, c)
-  steps.push(`\\text{式: } ${polyStr}`)
+  // ── Step 2: 共通因数 (GCF) ──
+  const absB = B < 0n ? -B : B
+  const absC = C < 0n ? -C : C
+  const g = gcdBig(gcdBig(A, absB), absC)
+  if (g > 1n) {
+    prefix *= g
+    A /= g; B /= g; C /= g
+    steps.push(`= ${pfx(prefix)}(${formatQuadraticLatex(A, B, C)})`)
+  }
 
-  // D = b²-4ac
-  const D = b * b - 4n * a * c
-  steps.push(`\\text{判別式: } D = b^2 - 4ac = ${b}^2 - 4 \\cdot ${a} \\cdot ${c} = ${D}`)
-
-  // 完全平方の確認
-  if (D === 0n) {
-    const negB_2a = Rational.of(-b).div(Rational.of(2n * a))
-    steps.push(`D = 0 \\Rightarrow \\text{完全平方式}`)
-    steps.push(`${polyStr} = ${formatCoef(aR)}\\left(x - ${negB_2a.toLatex()}\\right)^2`)
-    const factored = `${formatCoefBig(a)}\\left(x - ${negB_2a.toLatex()}\\right)^2`
+  // ── Special: C=0 かつ B≠0 → x をくくり出す ──
+  if (C === 0n && B !== 0n) {
+    const linPart = linFac(A, -B)  // (Ax + B) の形
+    const answer = `${pfx(prefix)}x${linPart}`
+    steps.push(`x \\text{ をくくり出す}`)
+    if (prefix === 1n) {
+      steps.push(`= x${linPart}`)
+    } else {
+      steps.push(`= ${pfx(prefix)}(x${linPart}) = ${answer}`)
+      steps.push(`\\therefore ${origLatex} = ${answer}`)
+    }
     return {
-      answerLatex: factored,
+      answerLatex: answer,
       stepsLatex: steps,
-      verify: {
-        ok: true,
-        checks: [`展開して確認: ${formatCoefBig(a)}(x - ${negB_2a.toLatex()})^2 = ${polyStr} \\checkmark`],
-      },
-      altForms: [{ label: '展開形', latex: polyStr }],
+      verify: { ok: true, checks: [`展開すると ${origLatex} に戻ることを確認 \\checkmark`] },
+      altForms: [],
     }
   }
 
-  // a²-b² = (a+b)(a-b) パターン
-  if (b === 0n && c < 0n && a > 0n) {
-    // ax²- (-c) → 共通因数を出す
-    const g = gcdBig(a < 0n ? -a : a, -c < 0n ? c : -c)
-    const aDiv = a / g
-    const cAbs = (-c) / g
-    // √(aDiv * x²) と √(cAbs) が整数か
-    const sqrtA = isqrt(aDiv)
-    const sqrtC = isqrt(cAbs)
-    if (sqrtA !== null && sqrtC !== null) {
-      steps.push(`\\text{差の平方: } a^2 - b^2 = (a+b)(a-b) \\text{ パターン}`)
-      steps.push(`${polyStr} = (${sqrtA === 1n ? '' : sqrtA}x + ${sqrtC})(${sqrtA === 1n ? '' : sqrtA}x - ${sqrtC})`)
-      const factored = `${g !== 1n ? g.toString() + ' \\cdot ' : ''}(${sqrtA === 1n ? '' : sqrtA}x + ${sqrtC})(${sqrtA === 1n ? '' : sqrtA}x - ${sqrtC})`
-      altForms.push({ label: '差の平方公式', latex: `a^2 - b^2 = (a+b)(a-b)` })
-      return {
-        answerLatex: factored,
-        stepsLatex: steps,
-        verify: {
-          ok: true,
-          checks: [`(${sqrtA === 1n ? '' : sqrtA}x + ${sqrtC})(${sqrtA === 1n ? '' : sqrtA}x - ${sqrtC}) = ${polyStr} \\checkmark`],
-        },
-        altForms,
-      }
+  // ── Step 3: Ax²+Bx+C を因数分解 ──
+  const D = B * B - 4n * A * C
+  const sqrtD = isqrt(D)
+
+  // 因数分解不可
+  if (sqrtD === null) {
+    const B2 = B * B
+    const fourAC = 4n * A * C
+    const dCalc = `D = b^2 - 4ac = ${B < 0n ? `(${B})` : String(B)}^2 - 4 \\times ${A} \\times ${C < 0n ? `(${C})` : String(C)} = ${B2} - (${fourAC}) = ${D}`
+    const reason = D < 0n
+      ? `D < 0 \\text{ のため、実数の範囲では因数分解できません}`
+      : `${D} \\text{ は平方数ではないため、整数係数では因数分解できません}`
+    return {
+      answerLatex: `${dCalc} \\\\[6pt] ${reason}`,
+      stepsLatex: [],
+      verify: { ok: false, checks: [] },
+      altForms: [],
     }
   }
 
-  // Dが完全平方か確認（整数解）
-  if (D > 0n) {
-    const sqrtD = isqrt(D)
-    if (sqrtD !== null) {
-      const twoA = 2n * a
-      // 解: x = (-b ± sqrtD) / (2a) が整数か
-      const num1 = -b + sqrtD
-      const num2 = -b - sqrtD
-      if (num1 % twoA === 0n && num2 % twoA === 0n) {
-        const x1 = num1 / twoA
-        const x2 = num2 / twoA
-        steps.push(`\\sqrt{D} = ${sqrtD}`)
-        steps.push(`x_1 = \\dfrac{${-b} + ${sqrtD}}{${twoA}} = ${x1}, \\quad x_2 = \\dfrac{${-b} - ${sqrtD}}{${twoA}} = ${x2}`)
-        steps.push(`\\therefore \\text{因数分解: } ${polyStr} = ${buildFactoredBig(a, x1, x2)}`)
-        altForms.push({ label: '解', latex: `x = ${x1}, \\quad x = ${x2}` })
-        return {
-          answerLatex: buildFactoredBig(a, x1, x2),
-          stepsLatex: steps,
-          verify: {
-            ok: true,
-            checks: [
-              `x=${x1} 代入: ${a * x1 * x1 + b * x1 + c}`,
-              `x=${x2} 代入: ${a * x2 * x2 + b * x2 + c}`,
-            ],
-          },
-          altForms,
-        }
-      }
-      // 有理数解の場合
-      const x1R = Rational.of(-b + sqrtD, twoA)
-      const x2R = Rational.of(-b - sqrtD, twoA)
-      steps.push(`\\sqrt{D} = ${sqrtD}`)
-      steps.push(`x_1 = ${x1R.toLatex()}, \\quad x_2 = ${x2R.toLatex()}`)
-      const factored = buildFactoredRat(aR, x1R, x2R)
-      steps.push(`\\therefore \\text{因数分解: } ${polyStr} = ${factored}`)
-      return {
-        answerLatex: factored,
-        stepsLatex: steps,
-        verify: { ok: true, checks: [`展開して ${polyStr} に戻ることを確認 \\checkmark`] },
-        altForms,
-      }
+  // 因数分解できる: 根を有理数で取得
+  // x1 = (-B + sqrtD) / (2A) = n1/d1,  x2 = (-B - sqrtD) / (2A) = n2/d2
+  const x1R = Rational.of(-B + sqrtD, 2n * A)
+  const x2R = Rational.of(-B - sqrtD, 2n * A)
+  const d1 = x1R.den, n1 = x1R.num
+  const d2 = x2R.den, n2 = x2R.num
+
+  // 因数: (d1*x - n1)(d2*x - n2)  ← 分数なし整数係数形
+  // 残余係数 rem = A / (d1*d2) は必ず整数になる
+  const rem = A / (d1 * d2)
+  const fac1 = linFac(d1, n1)
+  const fac2 = linFac(d2, n2)
+  const isPerfect = sqrtD === 0n
+  const innerStr = isPerfect ? `${fac1}^2` : `${fac1}${fac2}`
+  const remStr = rem === 1n ? '' : String(rem)
+  const answer = `${pfx(prefix)}${remStr}${innerStr}`
+
+  if (A === 1n) {
+    // ── 積と和の方法 (a=1) ──
+    // (x+p)(x+q) の p=-n1, q=-n2  (p+q=B, p*q=C)
+    const p = -n1, q = -n2
+    const pS = ns(p), qS = ns(q)
+    steps.push(`\\text{積が } ${C}\\text{、和が } ${B} \\text{ になる2数を探す}`)
+    if (isPerfect) {
+      steps.push(`\\rightarrow ${pS} \\text{ と } ${pS} \\quad (\\text{同じ数})`)
+      steps.push(`\\therefore ${formatQuadraticLatex(A, B, C)} = ${fac1}^2`)
+    } else {
+      steps.push(`\\rightarrow ${pS} \\text{ と } ${qS} \\quad (${pS} + ${qS} = ${B},\\ ${pS} \\times ${qS} = ${C})`)
+      steps.push(`\\therefore ${formatQuadraticLatex(A, B, C)} = ${fac1}${fac2}`)
     }
+  } else {
+    // ── たすき掛け・グループ法 (a>1) ──
+    // Bx を m + nCoef に分割: m*nCoef = A*C, m+nCoef = B
+    const AC = A * C
+    const m = -(d1 * n2)
+    const nCoef = -(n1 * d2)
+    const mS = ns(m), nS = ns(nCoef)
+    steps.push(`\\text{積が } ${A} \\times (${C}) = ${AC}\\text{、和が } ${B} \\text{ になる2数を探す}`)
+    if (isPerfect) {
+      steps.push(`\\rightarrow ${mS} \\text{ と } ${mS} \\quad (\\text{同じ数})`)
+    } else {
+      steps.push(`\\rightarrow ${mS} \\text{ と } ${nS} \\quad (${mS} + ${nS} = ${B},\\ ${mS} \\times ${nS} = ${AC})`)
+    }
+    // 分割した式を表示
+    steps.push(splitLatex(A, m, nCoef, C))
+    // グループ分けして因数分解
+    // Group1: Ax²+mx = d1*x*(d2*x-n2),  Group2: nCoef*x+C = -n1*(d2*x-n2)
+    const inner = linFac(d2, n2)
+    const g1outer = d1 === 1n ? 'x' : `${d1}x`
+    const negN1 = -n1
+    const sign2 = negN1 >= 0n ? ' + ' : ' - '
+    const abs2 = negN1 < 0n ? -negN1 : negN1
+    const g2outer = abs2 === 1n ? '' : String(abs2)
+    steps.push(`= ${g1outer}${inner}${sign2}${g2outer}${inner}`)
+    steps.push(`= ${innerStr}`)
   }
 
-  // それ以外: 因数分解できない
-  steps.push(`D = ${D} \\text{ は完全平方数ではない}`)
-  steps.push(`\\therefore \\text{整数係数では因数分解できません}`)
-  // 数値解での表示
-  const dNum = Number(D)
-  const x1Num = (-Number(b) + Math.sqrt(dNum)) / (2 * Number(a))
-  const x2Num = (-Number(b) - Math.sqrt(dNum)) / (2 * Number(a))
-  altForms.push({ label: '数値（近似）', latex: `x \\approx ${x1Num.toFixed(4)}, \\quad ${x2Num.toFixed(4)}` })
-  altForms.push({ label: '解の公式', latex: `x = \\dfrac{${-Number(b)} \\pm \\sqrt{${D}}}{${2 * Number(a)}}` })
+  // prefix があれば全体の答えを明示
+  if (prefix !== 1n) {
+    steps.push(`\\therefore ${origLatex} = ${answer}`)
+  }
+
 
   return {
-    answerLatex: `\\text{整数係数では因数分解不可}\\left( D = ${D} \\right)`,
+    answerLatex: answer,
     stepsLatex: steps,
-    verify: { ok: true, checks: ['整数係数の範囲では因数分解できません'] },
-    altForms,
+    verify: { ok: true, checks: [`展開すると ${origLatex} に戻ることを確認 \\checkmark`] },
+    altForms: [],
   }
 }
 
@@ -249,6 +263,7 @@ export function solveFactorExpand(params: FactorParams): CalcResult {
 
 // ========== ユーティリティ ==========
 function gcdBig(a: bigint, b: bigint): bigint {
+  a = a < 0n ? -a : a; b = b < 0n ? -b : b
   while (b !== 0n) { const t = b; b = a % b; a = t }
   return a
 }
@@ -262,16 +277,286 @@ function isqrt(n: bigint): bigint | null {
   return x * x === n ? x : null
 }
 
-function formatCoef(r: Rational): string {
-  if (r.isOne()) return ''
-  if (r.equals(Rational.NEG_ONE)) return '-'
-  return r.toLatex()
+/** prefix 係数を LaTeX 文字列に変換 (1→'', -1→'-', それ以外→数値) */
+function pfx(p: bigint): string {
+  if (p === 1n) return ''
+  if (p === -1n) return '-'
+  return String(p)
 }
 
-function formatCoefBig(a: bigint): string {
-  if (a === 1n) return ''
-  if (a === -1n) return '-'
-  return String(a)
+/** 数値を LaTeX 文字列に（負数はカッコ付き） */
+function ns(n: bigint): string {
+  return n < 0n ? `(${n})` : String(n)
+}
+
+/** 線形因数 (d*x - n) を LaTeX 文字列に変換 */
+function linFac(d: bigint, n: bigint): string {
+  const constTerm = -n
+  const dStr = d === 1n ? '' : String(d)
+  if (constTerm === 0n) return d === 1n ? 'x' : `${d}x`
+  const op = constTerm > 0n ? '+' : '-'
+  const abs = constTerm < 0n ? -constTerm : constTerm
+  return `(${dStr}x ${op} ${abs})`
+}
+
+/** Bx を m と nCoef に分割した式 Ax²+mx+nCoef*x+C */
+function splitLatex(A: bigint, m: bigint, nCoef: bigint, C: bigint): string {
+  const x2part = A === 1n ? 'x^2' : `${A}x^2`
+  const mpart = m === 1n ? ' + x' : m === -1n ? ' - x' : m > 0n ? ` + ${m}x` : ` - ${-m}x`
+  const npart = nCoef === 1n ? ' + x' : nCoef === -1n ? ' - x' : nCoef > 0n ? ` + ${nCoef}x` : ` - ${-nCoef}x`
+  const cpart = C === 0n ? '' : C > 0n ? ` + ${C}` : ` - ${-C}`
+  return `${x2part}${mpart}${npart}${cpart}`
+}
+
+// ========== 3次因数分解 ==========
+
+function formatCubicLatex(a: bigint, b: bigint, c: bigint, d: bigint): string {
+  let s = ''
+  if (a !== 0n) {
+    if (a === 1n) s += 'x^3'
+    else if (a === -1n) s += '-x^3'
+    else s += `${a}x^3`
+  }
+  if (b !== 0n) {
+    if (b === 1n) s += (s ? ' + ' : '') + 'x^2'
+    else if (b === -1n) s += (s ? ' - ' : '-') + 'x^2'
+    else if (b > 0n) s += (s ? ` + ${b}x^2` : `${b}x^2`)
+    else s += (s ? ` - ${-b}x^2` : `${b}x^2`)
+  }
+  if (c !== 0n) {
+    if (c === 1n) s += (s ? ' + ' : '') + 'x'
+    else if (c === -1n) s += (s ? ' - ' : '-') + 'x'
+    else if (c > 0n) s += (s ? ` + ${c}x` : `${c}x`)
+    else s += (s ? ` - ${-c}x` : `${c}x`)
+  }
+  if (d !== 0n) {
+    if (d > 0n) s += (s ? ` + ${d}` : `${d}`)
+    else s += (s ? ` - ${-d}` : `${d}`)
+  }
+  return s || '0'
+}
+
+function cubeRoot(n: bigint): bigint | null {
+  if (n === 0n) return 0n
+  const sign = n < 0n ? -1n : 1n
+  const absN = n < 0n ? -n : n
+  let x = BigInt(Math.round(Math.cbrt(Number(absN))))
+  if (x < 1n) x = 1n
+  while (x * x * x > absN) x--
+  while ((x + 1n) * (x + 1n) * (x + 1n) <= absN) x++
+  return x * x * x === absN ? sign * x : null
+}
+
+function divisorsBig(n: bigint): bigint[] {
+  if (n < 0n) n = -n
+  if (n === 0n) return []
+  const divs: bigint[] = []
+  for (let i = 1n; i * i <= n; i++) {
+    if (n % i === 0n) {
+      divs.push(i)
+      if (i !== n / i) divs.push(n / i)
+    }
+  }
+  divs.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+  return divs
+}
+
+function findRationalRoot3(A: bigint, B: bigint, C: bigint, D: bigint): Rational | null {
+  if (D === 0n) return Rational.of(0n, 1n)
+  const pCands = divisorsBig(D < 0n ? -D : D)
+  const qCands = divisorsBig(A)
+  for (const q of qCands) {
+    for (const p of pCands) {
+      for (const sign of [1n, -1n]) {
+        const pS = sign * p
+        const val = A * pS * pS * pS + B * q * pS * pS + C * q * q * pS + D * q * q * q
+        if (val === 0n) {
+          return Rational.of(pS, q)
+        }
+      }
+    }
+  }
+  return null
+}
+
+function formatTermSum(terms: bigint[]): string {
+  const nonZero = terms.filter(t => t !== 0n)
+  if (nonZero.length === 0) return '0'
+  let s = ''
+  for (const t of nonZero) {
+    if (s === '') {
+      s = String(t)
+    } else if (t > 0n) {
+      s += ` + ${t}`
+    } else {
+      s += ` - ${-t}`
+    }
+  }
+  return s
+}
+
+export function factorCubic(a: bigint, b: bigint, c: bigint, d: bigint): CalcResult {
+  const steps: string[] = []
+  const origLatex = formatCubicLatex(a, b, c, d)
+  steps.push(`\\text{式: } ${origLatex}`)
+
+  // Step 1: 符号正規化 (先頭係数を正に)
+  let prefix = 1n
+  let A = a, B = b, C = c, D = d
+  if (A < 0n) {
+    prefix = -1n
+    A = -A; B = -B; C = -C; D = -D
+    steps.push(`= -(${formatCubicLatex(A, B, C, D)})`)
+  }
+
+  // Step 2: GCF
+  const g = gcdBig(gcdBig(gcdBig(A, B), C), D)
+  if (g > 1n) {
+    prefix *= g
+    A /= g; B /= g; C /= g; D /= g
+    steps.push(`= ${pfx(prefix)}(${formatCubicLatex(A, B, C, D)})`)
+  }
+
+  // Step 3: D=0 特殊ケース (定数項が 0)
+  if (D === 0n) {
+    if (C === 0n && B === 0n) {
+      // Ax³ → x³ (GCF により A=1 のはず)
+      const answer = `${pfx(prefix)}x^3`
+      steps.push(`\\therefore ${origLatex} = ${answer}`)
+      return { answerLatex: answer, stepsLatex: steps, verify: { ok: true, checks: [] }, altForms: [] }
+    }
+    if (C === 0n) {
+      // Ax³+Bx² = x²(Ax+B)
+      const linStr = linFac(A, -B)
+      const answer = `${pfx(prefix)}x^2${linStr}`
+      steps.push(`x^2 \\text{ をくくり出す}`)
+      steps.push(`\\therefore ${origLatex} = ${answer}`)
+      return { answerLatex: answer, stepsLatex: steps, verify: { ok: true, checks: [] }, altForms: [] }
+    }
+    // Ax³+Bx²+Cx = x(Ax²+Bx+C)
+    steps.push(`x \\text{ をくくり出す}`)
+    const quadLatex = formatQuadraticLatex(A, B, C)
+    steps.push(`= ${pfx(prefix)}x(${quadLatex})`)
+    const qResult = factorQuadratic(A, B, C)
+    if (qResult.verify.ok) {
+      steps.push(`${quadLatex} = ${qResult.answerLatex}`)
+      const answer = `${pfx(prefix)}x${qResult.answerLatex}`
+      steps.push(`\\therefore ${origLatex} = ${answer}`)
+      return { answerLatex: answer, stepsLatex: steps, verify: { ok: true, checks: [] }, altForms: [] }
+    } else {
+      steps.push(`${quadLatex} \\text{ は整数係数では因数分解できません}`)
+      const answer = `${pfx(prefix)}x(${quadLatex})`
+      steps.push(`\\therefore ${origLatex} = ${answer}`)
+      return { answerLatex: answer, stepsLatex: steps, verify: { ok: true, checks: [] }, altForms: [] }
+    }
+  }
+
+  // Step 3.5: 和・差の公式チェック (B=0, C=0, D≠0)
+  if (B === 0n && C === 0n) {
+    const ca = cubeRoot(A)
+    const cbAbs = cubeRoot(D < 0n ? -D : D)
+    if (ca !== null && cbAbs !== null) {
+      const aStr = ca === 1n ? 'x' : `${ca}x`
+      if (D > 0n) {
+        // 和の公式: a³+b³ = (a+b)(a²-ab+b²)
+        const linStr = linFac(ca, -cbAbs)  // (ca*x + cbAbs)
+        const quadStr = formatQuadraticLatex(ca * ca, -(ca * cbAbs), cbAbs * cbAbs)
+        const answer = `${pfx(prefix)}${linStr}(${quadStr})`
+        steps.push(`\\text{和の公式: } a^3+b^3=(a+b)(a^2-ab+b^2)`)
+        steps.push(`a = ${aStr},\\quad b = ${cbAbs}`)
+        steps.push(`\\therefore ${origLatex} = ${answer}`)
+        return { answerLatex: answer, stepsLatex: steps, verify: { ok: true, checks: [] }, altForms: [] }
+      } else {
+        // 差の公式: a³-b³ = (a-b)(a²+ab+b²)
+        const linStr = linFac(ca, cbAbs)   // (ca*x - cbAbs)
+        const quadStr = formatQuadraticLatex(ca * ca, ca * cbAbs, cbAbs * cbAbs)
+        const answer = `${pfx(prefix)}${linStr}(${quadStr})`
+        steps.push(`\\text{差の公式: } a^3-b^3=(a-b)(a^2+ab+b^2)`)
+        steps.push(`a = ${aStr},\\quad b = ${cbAbs}`)
+        steps.push(`\\therefore ${origLatex} = ${answer}`)
+        return { answerLatex: answer, stepsLatex: steps, verify: { ok: true, checks: [] }, altForms: [] }
+      }
+    }
+  }
+
+  // Step 3.7: 完全3乗式チェック (ax+b)^3 = a³x³+3a²bx²+3ab²x+b³
+  {
+    const ca = cubeRoot(A)
+    const cb = cubeRoot(D)
+    if (ca !== null && cb !== null && B === 3n * ca * ca * cb && C === 3n * ca * cb * cb) {
+      // (ca*x + cb)^3 にマッチ
+      const linStr = linFac(ca, -cb)  // linFac(d,n) = (dx-n), n=-cb なので (dx+cb)
+      const answer = `${pfx(prefix)}${linStr}^3`
+      steps.push(`\\text{完全3乗: } (ax+b)^3 = a^3x^3 + 3a^2bx^2 + 3ab^2x + b^3`)
+      steps.push(`a = ${ca},\\quad b = ${cb}`)
+      steps.push(`\\therefore ${origLatex} = ${answer}`)
+      return { answerLatex: answer, stepsLatex: steps, verify: { ok: true, checks: [] }, altForms: [] }
+    }
+  }
+
+  // Step 4: 有理数根探索
+  const root = findRationalRoot3(A, B, C, D)
+  if (root === null) {
+    return {
+      answerLatex: `\\text{因数分解できない}`,
+      stepsLatex: steps,
+      verify: { ok: false, checks: [] },
+      altForms: [],
+    }
+  }
+
+  const p = root.num   // 分子 (符号付き)
+  const q = root.den   // 分母 (常に正)
+
+  // Step 5: 根の代入確認
+  if (q === 1n) {
+    const terms = [A * p * p * p, B * p * p, C * p, D]
+    steps.push(`x = ${p} \\text{ を代入: } ${formatTermSum(terms)} = 0 \\ \\checkmark`)
+  } else {
+    const rLatex = p < 0n ? `-\\dfrac{${-p}}{${q}}` : `\\dfrac{${p}}{${q}}`
+    steps.push(`x = ${rLatex} \\text{ を代入すると } 0 \\text{ になる} \\ \\checkmark`)
+  }
+
+  // Step 6: 合成除法 (Ax³+Bx²+Cx+D ÷ (qx-p))
+  const aQ = A / q
+  const e1 = (B + p * aQ) / q
+  const e2 = (C + p * e1) / q
+
+  const linFacStr = linFac(q, p)
+  const quotientLatex = formatQuadraticLatex(aQ, e1, e2)
+  steps.push(`${linFacStr} \\text{ で割ると: } ${quotientLatex}`)
+
+  // Step 7: 3重根チェック (合成除法の商が同じ根の完全平方式か確認)
+  const D_quad = e1 * e1 - 4n * aQ * e2
+  if (D_quad === 0n && e1 * q + 2n * aQ * p === 0n) {
+    // 3重根: (linFac)^3 × (aQ/q²)
+    const k = aQ / (q * q)
+    const totalCoeff = prefix * k
+    const finalAnswer = `${pfx(totalCoeff)}${linFacStr}^3`
+    steps.push(`${linFacStr} \\text{ が再び因数 } \\Rightarrow ${pfx(totalCoeff)}${linFacStr}^3`)
+    steps.push(`\\therefore ${origLatex} = ${finalAnswer}`)
+    return { answerLatex: finalAnswer, stepsLatex: steps, verify: { ok: true, checks: [] }, altForms: [] }
+  }
+
+  // Step 7: 商の因数分解
+  const quadRes = factorQuadratic(aQ, e1, e2)
+  let finalAnswer: string
+  if (quadRes.verify.ok) {
+    steps.push(`${quotientLatex} = ${quadRes.answerLatex}`)
+    finalAnswer = `${pfx(prefix)}${linFacStr}${quadRes.answerLatex}`
+  } else {
+    steps.push(`${quotientLatex} \\text{ は整数係数では因数分解できません}`)
+    finalAnswer = `${pfx(prefix)}${linFacStr}(${quotientLatex})`
+  }
+
+  steps.push(`\\therefore ${origLatex} = ${finalAnswer}`)
+
+  return {
+    answerLatex: finalAnswer,
+    stepsLatex: steps,
+    verify: { ok: true, checks: [] },
+    altForms: [],
+  }
 }
 
 function formatQuadraticLatex(a: bigint, b: bigint, c: bigint): string {
@@ -292,18 +577,4 @@ function formatQuadraticLatex(a: bigint, b: bigint, c: bigint): string {
     else s += (s ? ` - ${-c}` : `${c}`)
   }
   return s || '0'
-}
-
-function buildFactoredBig(a: bigint, x1: bigint, x2: bigint): string {
-  const coefStr = a === 1n ? '' : a === -1n ? '-' : `${a}`
-  const t1 = x1 === 0n ? 'x' : x1 < 0n ? `(x + ${-x1})` : `(x - ${x1})`
-  const t2 = x2 === 0n ? 'x' : x2 < 0n ? `(x + ${-x2})` : `(x - ${x2})`
-  return `${coefStr}${t1}${t2}`
-}
-
-function buildFactoredRat(a: Rational, x1: Rational, x2: Rational): string {
-  const coefStr = a.isOne() ? '' : a.equals(Rational.NEG_ONE) ? '-' : `${a.toLatex()}`
-  const t1 = x1.isZero() ? 'x' : x1.isNegative() ? `(x + ${x1.abs().toLatex()})` : `(x - ${x1.toLatex()})`
-  const t2 = x2.isZero() ? 'x' : x2.isNegative() ? `(x + ${x2.abs().toLatex()})` : `(x - ${x2.toLatex()})`
-  return `${coefStr}${t1}${t2}`
 }

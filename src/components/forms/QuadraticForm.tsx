@@ -45,7 +45,9 @@ export function QuadraticForm({ onSubmit }: Props) {
   const [c, setC] = useState('6')
 
   const MAX_DIGITS = 8
+  const parseCoeff = (s: string) => { const n = parseInt(s, 10); return isNaN(n) ? 0 : n }
   const isValidCoeff = (s: string) => {
+    if (s.trim() === '') return true
     const n = parseInt(s, 10)
     return !isNaN(n) && String(n) === s.trim() && Math.abs(n) <= 99_999_999
   }
@@ -56,7 +58,7 @@ export function QuadraticForm({ onSubmit }: Props) {
       alert(`係数は整数で入力してください（最大${MAX_DIGITS}桁）`)
       return
     }
-    const an = parseInt(a, 10), bn = parseInt(b, 10), cn = parseInt(c, 10)
+    const an = parseCoeff(a), bn = parseCoeff(b), cn = parseCoeff(c)
     if (an === 0) {
       alert('a ≠ 0 にしてください（a=0 では二次方程式になりません）')
       return
