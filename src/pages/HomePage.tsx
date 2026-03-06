@@ -68,8 +68,26 @@ export function HomePage() {
             <div className="tool-card-desc">約数の個数・和・一覧も同時に計算</div>
             <div className="tool-card-open">開く →</div>
           </Link>
+          <Link to="/base" className="tool-card">
+            <div className="tool-card-icon">₂</div>
+            <div className="tool-card-label">進数変換</div>
+            <div className="tool-card-desc">2〜62進数の相互変換。途中式つき</div>
+            <div className="tool-card-open">開く →</div>
+          </Link>
         </div>
         <p className="home-section-note">順次コンテンツを追加予定</p>
+      </section>
+
+      <section className="home-section">
+        <h3 className="home-section-title">エンコード・変換</h3>
+        <div className="tool-grid">
+          <Link to="/base64" className="tool-card">
+            <div className="tool-card-icon">64</div>
+            <div className="tool-card-label">Base64</div>
+            <div className="tool-card-desc">テキスト・ファイルのエンコード/デコード</div>
+            <div className="tool-card-open">開く →</div>
+          </Link>
+        </div>
       </section>
 
       <footer className="home-footer">

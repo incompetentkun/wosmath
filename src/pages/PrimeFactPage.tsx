@@ -4,16 +4,19 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Katex, KatexBlock } from '../components/Katex'
-import { computePrimeFact, type PrimeFactResult } from '../engines/number/prime_factorization'
+import { computePrimeFact, LARGE_THRESHOLD, type PrimeFactResult } from '../engines/number/prime_factorization'
 
-const MAX_VAL = 999_999_999
+const MAX_DIGITS = 24
 
 function parseInput(s: string): bigint | null {
   const t = s.trim()
   if (t === '') return null
-  const n = parseInt(t, 10)
-  if (isNaN(n) || n < 1 || n > MAX_VAL || String(n) !== t) return null
-  return BigInt(n)
+  if (!/^\d+$/.test(t)) return null
+  if (t.length > MAX_DIGITS) return null
+  if (t.length > 1 && t[0] === '0') return null
+  const n = BigInt(t)
+  if (n < 1n) return null
+  return n
 }
 
 export function PrimeFactPage() {
@@ -34,7 +37,7 @@ export function PrimeFactPage() {
     e.preventDefault()
     const n = parseInput(input)
     if (n === null) {
-      setError(`1〜${MAX_VAL.toLocaleString()} の整数を入力してください`)
+      setError(`1〜${MAX_DIGITS}桁の正の整数を入力してください`)
       setResult(null)
       return
     }
@@ -43,13 +46,14 @@ export function PrimeFactPage() {
     setShowSteps(false)
     const r = computePrimeFact(n)
     setResult(r)
-    // モバイルは結果までスクロール
     setTimeout(() => {
       if (resultRef.current && window.innerWidth < 769) {
         resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }
     }, 50)
   }
+
+  const isLarge = result && result.n >= LARGE_THRESHOLD
 
   return (
     <div className="pf-page">
@@ -70,25 +74,29 @@ export function PrimeFactPage() {
       <div className="pf-body">
         <div className="pf-heading">
           <h2 className="pf-title">素因数分解</h2>
-          <p className="pf-desc">正の整数を素因数分解し、約数の個数・和・一覧も求めます。</p>
+          <p className="pf-desc">正の整数を素因数分解します。9桁以下は約数の個数・和・一覧も求めます。</p>
         </div>
 
         {/* 入力フォーム */}
         <form className="pf-form" onSubmit={handleSubmit}>
+          <div className="pf-input-wrap">
+            <span className={`pf-digit-count${input.trim().length >= MAX_DIGITS ? ' pf-digit-count--limit' : ''}`}>
+              {input.trim().replace(/\D/g, '').length} / {MAX_DIGITS}桁
+            </span>
           <input
             className={`pf-input${error ? ' invalid' : ''}`}
-            type="number"
+            type="text"
             inputMode="numeric"
+            pattern="[0-9]*"
             value={input}
-            min={1}
-            max={MAX_VAL}
             placeholder="整数を入力"
             onChange={e => { setInput(e.target.value); setError('') }}
           />
+          </div>
           <button type="submit" className="btn-primary pf-submit-btn">素因数分解する</button>
         </form>
         {error && <p className="pf-error">{error}</p>}
-        <p className="pf-hint">※ 1〜{MAX_VAL.toLocaleString()} の整数のみ対応</p>
+        <p className="pf-hint">※ 1〜{MAX_DIGITS}桁の整数に対応</p>
 
         {/* 結果 */}
         {result && (
@@ -98,9 +106,14 @@ export function PrimeFactPage() {
             {/* 素因数分解 ヒーロー表示 */}
             <div className="pf-result-hero">
               {result.isPrime && <span className="pf-prime-badge">素数</span>}
-              <div className="pf-result-n">{String(result.n)}</div>
+              {!result.factorComplete && (
+                <p className="pf-incomplete-warn">⚠ 完全に素因数分解できませんでした</p>
+              )}
+              <div className={`pf-result-n${isLarge ? ' pf-result-n--large' : ''}`}>
+                {String(result.n)}
+              </div>
               {result.factorParts.length > 0 && (
-                <div className="pf-result-eq">
+                <div className={`pf-result-eq${isLarge ? ' pf-result-eq--large' : ''}`}>
                   <span className="pf-eq-sign">=</span>
                   {result.factorParts.map((part, i) => (
                     <span key={i} className="pf-factor-wrap">
@@ -112,91 +125,94 @@ export function PrimeFactPage() {
               )}
             </div>
 
-            {/* 約数の個数・和 カード */}
-            <div className="pf-info-cards">
-              <div className="pf-info-card">
-                <div className="pf-info-label">約数の個数</div>
-                <div className="pf-info-value">{String(result.divisorCount)}</div>
-                <div className="pf-info-sub">d({String(result.n)})</div>
+            {/* 約数の個数・和 カード（9桁以下のみ） */}
+            {!isLarge && (
+              <div className="pf-info-cards">
+                <div className="pf-info-card">
+                  <div className="pf-info-label">約数の個数</div>
+                  <div className="pf-info-value">{String(result.divisorCount)}</div>
+                  <div className="pf-info-sub">d({String(result.n)})</div>
+                </div>
+                <div className="pf-info-card">
+                  <div className="pf-info-label">約数の和</div>
+                  <div className="pf-info-value pf-info-value--sum">{String(result.divisorSum)}</div>
+                  <div className="pf-info-sub">σ({String(result.n)})</div>
+                </div>
               </div>
-              <div className="pf-info-card">
-                <div className="pf-info-label">約数の和</div>
-                <div className="pf-info-value pf-info-value--sum">{String(result.divisorSum)}</div>
-                <div className="pf-info-sub">σ({String(result.n)})</div>
-              </div>
-            </div>
+            )}
 
-            {/* 約数の一覧（折り畳み） */}
-            <div className="pf-collapse-wrap">
-              <button
-                className="pf-collapse-toggle"
-                onClick={() => setShowDivisors(s => !s)}
-              >
-                {showDivisors ? '▲' : '▼'}
-                　約数の一覧
-                <span className="pf-collapse-count">（{String(result.divisorCount)}個）</span>
-              </button>
-              {showDivisors && (
-                <div className="pf-collapse-content">
-                  <div className="pf-divisor-grid">
-                    {result.divisors.map((d, i) => (
-                      <span key={i} className="pf-divisor-chip">{String(d)}</span>
-                    ))}
+            {/* 約数の一覧（9桁以下のみ） */}
+            {!isLarge && (
+              <div className="pf-collapse-wrap">
+                <button
+                  className="pf-collapse-toggle"
+                  onClick={() => setShowDivisors(s => !s)}
+                >
+                  {showDivisors ? '▲' : '▼'}
+                  　約数の一覧
+                  <span className="pf-collapse-count">（{String(result.divisorCount)}個）</span>
+                </button>
+                {showDivisors && (
+                  <div className="pf-collapse-content">
+                    <div className="pf-divisor-grid">
+                      {result.divisors.map((d, i) => (
+                        <span key={i} className="pf-divisor-chip">{String(d)}</span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
-            {/* 途中式（折り畳み） */}
-            <div className="pf-collapse-wrap">
-              <button
-                className="pf-collapse-toggle"
-                onClick={() => setShowSteps(s => !s)}
-              >
-                {showSteps ? '▲' : '▼'}　途中式を見る
-              </button>
-              {showSteps && (
-                <div className="pf-collapse-content">
+            {/* 途中式（9桁以下のみ） */}
+            {!isLarge && (
+              <div className="pf-collapse-wrap">
+                <button
+                  className="pf-collapse-toggle"
+                  onClick={() => setShowSteps(s => !s)}
+                >
+                  {showSteps ? '▲' : '▼'}　途中式を見る
+                </button>
+                {showSteps && (
+                  <div className="pf-collapse-content">
 
-                  {/* 割り算の手順 */}
-                  {result.divisionSteps.length > 0 && (
-                    <div className="pf-steps-section">
-                      <h4 className="pf-steps-title">割り算による素因数分解</h4>
-                      {result.divisionSteps.map((latex, i) => (
-                        <KatexBlock key={i} latex={latex} />
-                      ))}
-                    </div>
-                  )}
+                    {result.divisionSteps.length > 0 && (
+                      <div className="pf-steps-section">
+                        <h4 className="pf-steps-title">割り算による素因数分解</h4>
+                        {result.divisionSteps.map((latex, i) => (
+                          <KatexBlock key={i} latex={latex} />
+                        ))}
+                      </div>
+                    )}
 
-                  {/* 約数の個数 */}
-                  {!result.isPrime && (
-                    <div className="pf-steps-section">
-                      <h4 className="pf-steps-title">約数の個数の求め方</h4>
-                      <p className="pf-steps-note">
-                        各素因数の指数に 1 を加えてすべてかけ合わせる。
-                      </p>
-                      {result.divisorCountLatex.map((latex, i) => (
-                        <KatexBlock key={i} latex={latex} />
-                      ))}
-                    </div>
-                  )}
+                    {!result.isPrime && (
+                      <div className="pf-steps-section">
+                        <h4 className="pf-steps-title">約数の個数の求め方</h4>
+                        <p className="pf-steps-note">
+                          各素因数の指数に 1 を加えてすべてかけ合わせる。
+                        </p>
+                        {result.divisorCountLatex.map((latex, i) => (
+                          <KatexBlock key={i} latex={latex} />
+                        ))}
+                      </div>
+                    )}
 
-                  {/* 約数の和 */}
-                  {!result.isPrime && (
-                    <div className="pf-steps-section">
-                      <h4 className="pf-steps-title">約数の和の求め方</h4>
-                      <p className="pf-steps-note">
-                        各素因数について等比数列の和を求め、すべてかけ合わせる。
-                      </p>
-                      {result.divisorSumLatex.map((latex, i) => (
-                        <KatexBlock key={i} latex={latex} />
-                      ))}
-                    </div>
-                  )}
+                    {!result.isPrime && (
+                      <div className="pf-steps-section">
+                        <h4 className="pf-steps-title">約数の和の求め方</h4>
+                        <p className="pf-steps-note">
+                          各素因数について等比数列の和を求め、すべてかけ合わせる。
+                        </p>
+                        {result.divisorSumLatex.map((latex, i) => (
+                          <KatexBlock key={i} latex={latex} />
+                        ))}
+                      </div>
+                    )}
 
-                </div>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
+            )}
 
           </div>
 
