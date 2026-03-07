@@ -5,6 +5,7 @@ import { GcdLcmPage } from './pages/GcdLcmPage'
 import { PrimeFactPage } from './pages/PrimeFactPage'
 import { BaseConvPage } from './pages/BaseConvPage'
 import { Base64Page } from './pages/Base64Page'
+import { CharCodePage } from './pages/CharCodePage'
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
       <Route path="/prime" element={<PrimeFactPage />} />
       <Route path="/base" element={<BaseConvPage />} />
       <Route path="/base64" element={<Base64Page />} />
+      <Route path="/charcode" element={<CharCodePage />} />
       <Route path="/:slug" element={<ToolPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

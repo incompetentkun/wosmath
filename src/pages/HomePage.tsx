@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { MODES } from '../types'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { SiteFooter } from '../components/SiteFooter'
 
 const MODE_ICONS: Record<string, string> = {
   quadratic:     'x²',
@@ -87,12 +88,16 @@ export function HomePage() {
             <div className="tool-card-desc">テキスト・ファイルのエンコード/デコード</div>
             <div className="tool-card-open">開く →</div>
           </Link>
+          <Link to="/charcode" className="tool-card">
+            <div className="tool-card-icon">文</div>
+            <div className="tool-card-label">文字コード</div>
+            <div className="tool-card-desc">Unicode・UTF-8・HTMLエンティティを表示</div>
+            <div className="tool-card-open">開く →</div>
+          </Link>
         </div>
       </section>
 
-      <footer className="home-footer">
-        <p>© 2026 wosmath</p>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

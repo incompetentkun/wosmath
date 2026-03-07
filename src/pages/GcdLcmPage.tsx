@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { KatexBlock } from '../components/Katex'
+import { SiteFooter } from '../components/SiteFooter'
 import { computeGcdLcm } from '../engines/number/gcd_lcm'
 
 const MAX_NUMS = 8
@@ -164,6 +165,7 @@ export function GcdLcmPage() {
           </div>
         </div>
       </div>
+      <SiteFooter />
     </div>
   )
 }

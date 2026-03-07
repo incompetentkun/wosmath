@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { KatexBlock } from '../components/Katex'
+import { SiteFooter } from '../components/SiteFooter'
 import {
   computeBaseConv, normalizeInput, isValidForBase, charsetDescription,
   MAX_BASE, MIN_BASE, MAX_INPUT_LEN, CHARSETS,
@@ -261,6 +262,7 @@ export function BaseConvPage() {
         </div>
 
       </div>
+      <SiteFooter />
     </div>
   )
 }

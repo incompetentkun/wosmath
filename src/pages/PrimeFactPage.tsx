@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Katex, KatexBlock } from '../components/Katex'
+import { SiteFooter } from '../components/SiteFooter'
 import { computePrimeFact, LARGE_THRESHOLD, type PrimeFactResult } from '../engines/number/prime_factorization'
 
 const MAX_DIGITS = 24
@@ -246,6 +247,7 @@ export function PrimeFactPage() {
           </>
         )}
       </div>
+      <SiteFooter />
     </div>
   )
 }

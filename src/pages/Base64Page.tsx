@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { SiteFooter } from '../components/SiteFooter'
 
 const MAX_FILE_BYTES = 50 * 1024 * 1024  // 50MB
 
@@ -407,6 +408,7 @@ export function Base64Page() {
           </div>
         </section>
       </div>
+      <SiteFooter />
     </div>
   )
 }

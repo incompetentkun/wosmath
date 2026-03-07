@@ -12,6 +12,7 @@ import { IntegralForm } from '../components/forms/IntegralForm'
 import { CombinatoricsForm } from '../components/forms/CombinatoricsForm'
 import { BinomialForm } from '../components/forms/BinomialForm'
 import { SequenceForm } from '../components/forms/SequenceForm'
+import { SiteFooter } from '../components/SiteFooter'
 
 const CATEGORIES = [...new Set(MODES.map(m => m.category))]
 const AVAILABLE_SLUGS = ['quadratic', 'factorization']
@@ -141,6 +142,8 @@ export function ToolPage() {
           )}
         </main>
       </div>
+
+      <SiteFooter />
 
       {showGuide && <QuadraticGuide onClose={() => setShowGuide(false)} />}
     </div>
